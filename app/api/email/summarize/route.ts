@@ -1,7 +1,7 @@
-// app/api/email/summarize/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs";
-import { generateCompletion } from "@/lib/openai";
+import { auth } from "@clerk/nextjs/server";
+import { generateWithOllama } from "@/lib/ollama";
+import { selectModel } from "@/lib/model-selector";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
@@ -12,7 +12,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -26,29 +26,36 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { email } = schema.parse(body);
 
-    // Generate summary
-    const completion = await generateCompletion([
-      {
-        role: "system",
-        content:
-          "You are an email assistant. Summarize the following email in a concise way, extracting key points and action items. Format your response as JSON with fields: summary (string), keyPoints (array), sentiment (string).",
-      },
-      {
-        role: "user",
-        content: email,
-      },
-    ]);
+    const systemPrompt = "You are an email assistant. Summarize the following email in a concise way, extracting key points and action items. Format your response as JSON with fields: summary (string), keyPoints (array), sentiment (string).";
 
-    const result = JSON.parse(completion.content || "{}");
+    const model = selectModel("email");
+
+    // Generate summary
+    const completion = await generateWithOllama(
+      email,
+      systemPrompt,
+      {
+        model,
+        format: "json",
+        temperature: 0.3
+      }
+    );
+
+    let result;
+    try {
+      result = JSON.parse(completion.content || "{}");
+    } catch (e) {
+      result = {};
+    }
 
     // Store in database
     const emailSummary = await prisma.emailSummary.create({
       data: {
         userId,
         originalEmail: email,
-        summary: result.summary,
-        keyPoints: result.keyPoints,
-        sentiment: result.sentiment,
+        summary: result.summary || completion.content,
+        keyPoints: result.keyPoints || [],
+        sentiment: result.sentiment || "Neutral",
       },
     });
 
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
       where: {
         userId_date: {
           userId,
-          date: new Date().setHours(0, 0, 0, 0),
+          date: new Date(new Date().setHours(0, 0, 0, 0)),
         },
       },
       update: {

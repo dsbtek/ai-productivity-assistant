@@ -1,13 +1,13 @@
 export function selectModel(task: string): string {
   const models = {
-    email: process.env.OLLAMA_EMAIL_MODEL || "mistral",
-    code: process.env.OLLAMA_CODE_MODEL || "codellama",
-    qa: process.env.OLLAMA_QA_MODEL || "llama2:7b",
-    summary: process.env.OLLAMA_SUMMARY_MODEL || "llama2:7b",
+    email: process.env.OLLAMA_EMAIL_MODEL || "smollm2:latest",
+    code: process.env.OLLAMA_CODE_MODEL || "deepseek-coder:latest",
+    qa: process.env.OLLAMA_QA_MODEL || "phi4-mini:latest",
+    summary: process.env.OLLAMA_SUMMARY_MODEL || "smollm2:latest",
   };
 
   return (
-    models[task as keyof typeof models] || process.env.OLLAMA_MODEL || "llama2"
+    models[task as keyof typeof models] || process.env.OLLAMA_MODEL || "phi4-mini:latest"
   );
 }
 

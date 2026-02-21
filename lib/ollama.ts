@@ -15,7 +15,7 @@ export async function generateWithOllama(
     format?: "json";
   },
 ) {
-  const model = options?.model || process.env.OLLAMA_MODEL || "llama2";
+  const model = options?.model || process.env.OLLAMA_MODEL || "phi4-mini:latest";
 
   const messages = [];
   if (system) {

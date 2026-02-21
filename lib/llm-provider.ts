@@ -1,3 +1,10 @@
+import { generateWithOllama } from "./ollama";
+
+async function generateWithCloud(prompt: string, system?: string) {
+  console.log("Cloud fallback requested but not implemented");
+  throw new Error("Cloud fallback not implemented");
+}
+
 export async function generateWithFallback(prompt: string, system?: string) {
   try {
     // Try local Ollama first

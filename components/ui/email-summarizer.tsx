@@ -15,14 +15,14 @@ export function EmailSummarizer() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const response = await fetch('/api/email/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      
+
       const data = await response.json();
       setSummary(data);
     } catch (error) {
@@ -42,7 +42,7 @@ export function EmailSummarizer() {
           <Textarea
             placeholder="Paste your email here..."
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEmail(e.target.value)}
             rows={6}
           />
           <Button type="submit" disabled={loading || !email}>
@@ -50,14 +50,14 @@ export function EmailSummarizer() {
             Summarize
           </Button>
         </form>
-        
+
         {summary && (
           <div className="mt-6 space-y-4">
             <div className="p-4 bg-muted rounded-lg">
               <h3 className="font-semibold mb-2">Summary</h3>
               <p>{summary.summary}</p>
             </div>
-            
+
             {summary.keyPoints && (
               <div>
                 <h3 className="font-semibold mb-2">Key Points</h3>
@@ -68,7 +68,7 @@ export function EmailSummarizer() {
                 </ul>
               </div>
             )}
-            
+
             {summary.sentiment && (
               <div className="text-sm text-muted-foreground">
                 Sentiment: {summary.sentiment}

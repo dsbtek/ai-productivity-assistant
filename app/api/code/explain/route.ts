@@ -1,7 +1,7 @@
-// app/api/code/explain/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs";
-import { generateCompletion } from "@/lib/openai";
+import { auth } from "@clerk/nextjs/server";
+import { generateWithOllama } from "@/lib/ollama";
+import { selectModel } from "@/lib/model-selector";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -12,7 +12,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -20,27 +20,36 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { code, language } = schema.parse(body);
 
-    const completion = await generateCompletion([
-      {
-        role: "system",
-        content: `You are a code explanation assistant. Explain the following ${language} code in detail. Format as JSON with fields: explanation (string), suggestions (array), complexity (string).`,
-      },
-      {
-        role: "user",
-        content: code,
-      },
-    ]);
+    const systemPrompt = `You are a code explanation assistant. Explain the following ${language} code in detail. Format as JSON with fields: explanation (string), suggestions (array), complexity (string).`;
+    const userPrompt = code;
 
-    const result = JSON.parse(completion.content || "{}");
+    const model = selectModel("code");
+
+    const completion = await generateWithOllama(
+      userPrompt,
+      systemPrompt,
+      {
+        model,
+        format: "json",
+        temperature: 0.2
+      }
+    );
+
+    let result;
+    try {
+      result = JSON.parse(completion.content || "{}");
+    } catch (e) {
+      result = {};
+    }
 
     const analysis = await prisma.codeAnalysis.create({
       data: {
         userId,
         code,
         language,
-        explanation: result.explanation,
-        suggestions: result.suggestions,
-        complexity: result.complexity,
+        explanation: result.explanation || completion.content,
+        suggestions: result.suggestions || [],
+        complexity: result.complexity || "Unknown",
       },
     });
 
@@ -53,4 +62,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-s;

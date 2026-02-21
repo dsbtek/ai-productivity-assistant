@@ -11,7 +11,9 @@
     "ollama:serve": "ollama serve",
     "ollama:list": "ollama list",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.38.1",
